@@ -1,25 +1,41 @@
-import { redirect } from 'next/navigation';
+import Link from 'next/link';
+import { listTechnicians } from '@/lib/orders';
 import { requireUser } from '@/lib/session';
-import { RouteProbe } from '@/components/route-probe';
-
-// Placeholder for the order creation form. The built version is parked at
-// page.tsx.bak alongside order-form.tsx.bak, actions/orders.ts.bak and
-// validation.ts.bak; the create_order() RPC it calls is already applied to the
-// database by migration 0005.
+import { OrderForm } from '@/components/order-form';
+import { AccessDenied } from '@/components/access-denied';
+import { Card, CardContent } from '@/components/ui/card';
 
 export default async function NewOrderPage() {
-  const user = await requireUser();
+  const [user, technicians] = await Promise.all([requireUser(), listTechnicians()]);
 
-  // Only Admin can create orders. Enforced again in the server action and a
-  // third time by the trigger in 0004 — this redirect is only convenience.
-  if (user.role !== 'admin') redirect('/orders');
+  if (user.role !== 'admin') {
+    return (
+      <AccessDenied
+        user={user}
+        title="Admins only"
+        needs="Only an admin can create orders and assign technicians."
+        backHref="/orders"
+        backLabel="Go to Orders"
+      />
+    );
+  }
 
   return (
-    <RouteProbe
-      user={user}
-      route="/orders/new"
-      allowed="admin"
-      guard="No session -> /switch-role. Manager or technician -> /orders."
-    />
+    <div className="mx-auto max-w-3xl space-y-6">
+      <div>
+        <Link href="/orders" className="text-sm text-muted-foreground hover:underline">
+          ← Orders
+        </Link>
+        <h1 className="mt-1 text-2xl font-semibold tracking-tight">New order</h1>
+        <p className="text-sm text-muted-foreground">
+          The order number is generated automatically on save.
+        </p>
+      </div>
+      <Card>
+        <CardContent className="pt-6">
+          <OrderForm technicians={technicians ?? []} />
+        </CardContent>
+      </Card>
+    </div>
   );
 }
