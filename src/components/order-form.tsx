@@ -73,7 +73,14 @@ export function OrderForm({ technicians }: { technicians: Tech[] }) {
           <Label htmlFor="cust_name">
             Customer name <span className="text-destructive">*</span>
           </Label>
-          <Input id="cust_name" name="cust_name" maxLength={100} autoComplete="off" defaultValue={prev.cust_name ?? ''} />
+          <Input
+            id="cust_name"
+            name="cust_name"
+            maxLength={100}
+            autoComplete="off"
+            defaultValue={prev.cust_name ?? ''}
+            aria-invalid={Boolean(errors.cust_name?.length)}
+          />
           <FieldError errors={errors.cust_name} />
         </div>
 
@@ -88,6 +95,7 @@ export function OrderForm({ technicians }: { technicians: Tech[] }) {
             placeholder="012-345 6789 or 60123456789"
             autoComplete="off"
             defaultValue={prev.phone ?? ''}
+            aria-invalid={Boolean(errors.phone?.length)}
           />
           <p className="text-xs text-muted-foreground">Stored as 60… for WhatsApp.</p>
           <FieldError errors={errors.phone} />
@@ -97,7 +105,13 @@ export function OrderForm({ technicians }: { technicians: Tech[] }) {
           <Label htmlFor="address">
             Address <span className="text-destructive">*</span>
           </Label>
-          <Input id="address" name="address" autoComplete="off" defaultValue={prev.address ?? ''} />
+          <Input
+            id="address"
+            name="address"
+            autoComplete="off"
+            defaultValue={prev.address ?? ''}
+            aria-invalid={Boolean(errors.address?.length)}
+          />
           <FieldError errors={errors.address} />
         </div>
 
@@ -106,7 +120,7 @@ export function OrderForm({ technicians }: { technicians: Tech[] }) {
             Service type <span className="text-destructive">*</span>
           </Label>
           <Select name="service_type" defaultValue={prev.service_type || undefined}>
-            <SelectTrigger id="service_type">
+            <SelectTrigger id="service_type" aria-invalid={Boolean(errors.service_type?.length)}>
               {/* base-ui renders the raw stored value unless given a formatter */}
               <SelectValue placeholder="Choose a service">
                 {(v) => SERVICE_TYPE_LABEL[v as ServiceType] ?? 'Choose a service'}
@@ -133,6 +147,7 @@ export function OrderForm({ technicians }: { technicians: Tech[] }) {
             inputMode="decimal"
             placeholder="250.00"
             defaultValue={prev.quoted_price ?? ''}
+            aria-invalid={Boolean(errors.quoted_price?.length)}
           />
           <FieldError errors={errors.quoted_price} />
         </div>
@@ -145,6 +160,7 @@ export function OrderForm({ technicians }: { technicians: Tech[] }) {
             rows={3}
             placeholder="What did the customer report?"
             defaultValue={prev.problem_desc ?? ''}
+            aria-invalid={Boolean(errors.problem_desc?.length)}
           />
           <FieldError errors={errors.problem_desc} />
         </div>
@@ -183,6 +199,7 @@ export function OrderForm({ technicians }: { technicians: Tech[] }) {
             rows={3}
             placeholder="Internal only."
             defaultValue={prev.admin_notes ?? ''}
+            aria-invalid={Boolean(errors.admin_notes?.length)}
           />
           <FieldError errors={errors.admin_notes} />
         </div>
