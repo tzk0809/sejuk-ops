@@ -76,7 +76,7 @@ begin
                   new.action_type, actor_name, actor_role)
     -- identity, not role: the technician must be the one this order is assigned to
     when new.action_type in ('started', 'completed')
-         and new.user_id is distinct from cur_tech and false
+         and new.user_id is distinct from cur_tech
       then format('only the assigned technician may %s this job; %s is not assigned to it',
                   new.action_type, actor_name)
     when new.action_type in ('reviewed', 'rejected', 'closed') and actor_role <> 'manager'
