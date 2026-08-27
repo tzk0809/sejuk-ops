@@ -2,7 +2,7 @@ import 'server-only';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { db } from '@/lib/supabase/server';
-import type { User, UserRole } from '@/lib/types';
+import { DEFAULT_STATUS, type User, type UserRole } from '@/lib/types';
 
 // Mock identity. There is no authentication: the "session" is a cookie holding
 // the id of a seeded user, chosen on /switch-role.
@@ -66,13 +66,31 @@ export async function requireUser(): Promise<User> {
 }
 
 /**
- * Where each role belongs after signing in.
+ * The bare route each role belongs on.
  *
  * Two routes rather than one that changes shape: the spec has admins at desks
  * and technicians on phones in the field, and Module 2 asks for a mobile-first
  * technician interface optimised for speed. Each page guards itself as well, so
  * this is convenience — the redirect is not the security boundary.
+ *
+ * Used for navigation. For the view someone should LAND on at sign-in, use
+ * landingPathFor, which adds their default filter.
  */
 export function homePathFor(role: UserRole): string {
   return role === 'technician' ? '/jobs' : '/orders';
+}
+
+/**
+ * Where a role lands immediately after choosing who they are.
+ *
+ * The default filter belongs to signing in, not to the URL. Applying it on every
+ * param-less visit instead would mean the nav link could never show an
+ * unfiltered list — clicking "Orders" while viewing Closed would silently snap
+ * back to the role default and undo the filter. Landing and filtering are
+ * separate questions, so they get separate functions.
+ */
+export function landingPathFor(role: UserRole): string {
+  const base = homePathFor(role);
+  const status = DEFAULT_STATUS[role];
+  return status ? `${base}?status=${status}` : base;
 }

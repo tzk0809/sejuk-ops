@@ -1,7 +1,6 @@
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
-import { listOrders, isSortKey, DEFAULT_STATUS } from '@/lib/orders';
+import { listOrders, isSortKey } from '@/lib/orders';
 import { requireUser } from '@/lib/session';
 import { OrderFilters } from '@/components/order-filters';
 import { StatusBadge } from '@/components/status-badge';
@@ -10,7 +9,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import { money, shortDate, serviceLabel, truncate } from '@/lib/format';
-import { ORDER_STATUS, SERVICE_TYPE, ALL_STATUSES } from '@/lib/types';
+import { ORDER_STATUS, SERVICE_TYPE } from '@/lib/types';
 import type { OrderStatus, ServiceType } from '@/lib/types';
 
 type Params = Promise<{ [k: string]: string | string[] | undefined }>;
@@ -27,20 +26,11 @@ export default async function OrdersPage({ searchParams }: { searchParams: Param
   const sp = await searchParams;
   const user = await requireUser();
 
+  // An absent status means no status filter. The per-role default view is
+  // applied once at sign-in (landingPathFor) rather than on every param-less
+  // visit, so the nav link can show an unfiltered list instead of silently
+  // snapping back to the role default.
   const statusParam = one(sp.status);
-
-  // No status in the URL means the visitor has just arrived, so send them to
-  // their role's default view — as a redirect rather than a silent filter, so
-  // the URL always says exactly what is being shown and Clear behaves sensibly.
-  if (statusParam === undefined) {
-    const fallback = DEFAULT_STATUS[user.role];
-    const next = new URLSearchParams(
-      Object.entries(sp).flatMap(([k, v]) => (v === undefined ? [] : [[k, one(v)!]])),
-    );
-    next.set('status', fallback ?? ALL_STATUSES);
-    redirect(`/orders?${next.toString()}`);
-  }
-
   const serviceParam = one(sp.service);
   const sortParam = one(sp.sort);
 

@@ -51,6 +51,20 @@ export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
   closed: 'Closed',
 };
 
+/**
+ * The view each role LANDS on when they sign in, expressed as a status filter.
+ * Applied once at sign-in rather than on every param-less visit — see
+ * landingPathFor in lib/session.ts for why those are different things.
+ */
+export const DEFAULT_STATUS: Record<UserRole, OrderStatus | null> = {
+  // An admin's job is getting unassigned work onto someone.
+  admin: 'new',
+  // A manager's job is clearing the review queue.
+  manager: 'job_done',
+  // A technician wants their whole workload, not one slice of it.
+  technician: null,
+};
+
 export type User = {
   id: string;
   name: string;

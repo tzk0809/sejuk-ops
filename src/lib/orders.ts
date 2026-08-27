@@ -1,6 +1,6 @@
 import 'server-only';
 import { db } from '@/lib/supabase/server';
-import type { OrderWithTech, OrderStatus, ServiceType, User, UserRole } from '@/lib/types';
+import type { OrderWithTech, OrderStatus, ServiceType, User } from '@/lib/types';
 
 // The technician join. Named so PostgREST knows which FK to follow — orders has
 // exactly one reference to users today, but naming it keeps the query correct if
@@ -24,16 +24,6 @@ export type OrderFilters = {
   status?: OrderStatus;
   service?: ServiceType;
   sort?: SortKey;
-};
-
-/** The default status filter each role opens on, chosen to match their actual job. */
-export const DEFAULT_STATUS: Record<UserRole, OrderStatus | null> = {
-  // An admin's job is getting unassigned work onto someone.
-  admin: 'new',
-  // A manager's job is clearing the review queue.
-  manager: 'job_done',
-  // A technician wants their whole workload, not one slice of it.
-  technician: null,
 };
 
 /**

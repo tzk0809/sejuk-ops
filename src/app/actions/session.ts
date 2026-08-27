@@ -4,7 +4,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/supabase/server';
-import { SESSION_COOKIE, homePathFor } from '@/lib/session';
+import { SESSION_COOKIE, landingPathFor } from '@/lib/session';
 import type { User } from '@/lib/types';
 
 /**
@@ -37,7 +37,7 @@ export async function switchUser(userId: string, goHome = false) {
   // Every page reads the acting user, so all of them are now stale.
   revalidatePath('/', 'layout');
 
-  if (goHome) redirect(homePathFor(user.role));
+  if (goHome) redirect(landingPathFor(user.role));
 }
 
 /** Clears the session, sending the visitor back to the picker. */
