@@ -2,9 +2,11 @@
 
 import { useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { createUploadUrl, confirmUpload, removeUpload } from '@/app/actions/jobs';
 import {
-  ACCEPT_ATTR, MAX_FILES, humanSize, limitsSummary, rejectReason, isImage, isVideo,
+  ACCEPT_ATTR, MAX_FILES, effectiveMime, humanSize, limitsSummary, rejectReason,
+  isImage, isVideo,
 } from '@/lib/uploads';
 import { Button } from '@/components/ui/button';
 import type { OrderDoc } from '@/lib/types';
@@ -24,9 +26,13 @@ type Pending = { name: string; pct: number };
 export function JobUploader({ orderId, docs }: { orderId: string; docs: OrderDoc[] }) {
   const input = useRef<HTMLInputElement>(null);
   const router = useRouter();
-  const [errors, setErrors] = useState<string[]>([]);
   const [pending, setPending] = useState<Pending[]>([]);
   const [removing, startRemoving] = useTransition();
+
+  // Toasts rather than an inline error list: rejections arrive one per file and
+  // often across several picks, and an inline list either replaced the previous
+  // batch (losing it) or grew forever with no way to dismiss. Toasts stack,
+  // expire on their own, and do not push the form around.
 
   const remaining = MAX_FILES - docs.length - pending.length;
 
@@ -35,45 +41,48 @@ export function JobUploader({ orderId, docs }: { orderId: string; docs: OrderDoc
     e.target.value = ''; // let the same file be re-picked after an error
     if (picked.length === 0) return;
 
-    const problems: string[] = [];
     const accepted: File[] = [];
 
     for (const f of picked) {
       // Checked here so the technician finds out before spending upload time on
       // a phone connection. The server checks again — this pass is UX only.
       const reason = rejectReason(f);
-      if (reason) problems.push(reason);
+      if (reason) toast.error(reason);
       else if (accepted.length < remaining) accepted.push(f);
-      else problems.push(`${f.name}: only ${MAX_FILES} files per job.`);
+      else toast.error(`${f.name}: only ${MAX_FILES} files per job.`);
     }
-    setErrors(problems);
 
     for (const file of accepted) {
       setPending((p) => [...p, { name: file.name, pct: 0 }]);
 
+      // The type the browser reported may be empty (Windows + .heic), so the
+      // resolved one is used everywhere the file's type is recorded.
+      const mime = effectiveMime(file);
+
       const prep = await createUploadUrl(orderId, {
-        name: file.name, type: file.type, size: file.size,
+        name: file.name, type: mime, size: file.size,
       });
       if (!prep.ok) {
-        setErrors((s) => [...s, prep.message]);
+        toast.error(prep.message);
         setPending((p) => p.filter((x) => x.name !== file.name));
         continue;
       }
 
       try {
-        await put(prep.signedUrl, file, (pct) =>
+        await put(prep.signedUrl, file, mime, (pct) =>
           setPending((p) => p.map((x) => (x.name === file.name ? { ...x, pct } : x))),
         );
         const res = await confirmUpload(orderId, {
           url: prep.path,
           name: file.name,
-          type: file.type,
+          type: mime,
           size: file.size,
           uploaded_at: new Date().toISOString(),
         });
-        if (!res.ok) setErrors((s) => [...s, res.message]);
+        if (!res.ok) toast.error(res.message);
+        else toast.success(`${file.name} attached`);
       } catch (err) {
-        setErrors((s) => [...s, `${file.name}: upload failed. ${(err as Error).message}`]);
+        toast.error(`${file.name}: upload failed. ${(err as Error).message}`);
       } finally {
         setPending((p) => p.filter((x) => x.name !== file.name));
         router.refresh();
@@ -84,7 +93,7 @@ export function JobUploader({ orderId, docs }: { orderId: string; docs: OrderDoc
   function onRemove(path: string) {
     startRemoving(async () => {
       const res = await removeUpload(orderId, path);
-      if (!res.ok) setErrors([res.message]);
+      if (!res.ok) toast.error(res.message);
       router.refresh();
     });
   }
@@ -162,19 +171,6 @@ export function JobUploader({ orderId, docs }: { orderId: string; docs: OrderDoc
         <Upload className="size-4" aria-hidden />
         {remaining <= 0 ? `${MAX_FILES} files attached` : 'Add files'}
       </Button>
-
-      {errors.length > 0 && (
-        <ul className="space-y-1">
-          {errors.map((e, i) => (
-            <li
-              key={i}
-              className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-            >
-              {e}
-            </li>
-          ))}
-        </ul>
-      )}
     </div>
   );
 }
@@ -183,11 +179,18 @@ export function JobUploader({ orderId, docs }: { orderId: string; docs: OrderDoc
  * XHR rather than fetch: only XHR reports upload progress, and on a phone
  * connection a 20MB video with no feedback looks like a frozen app.
  */
-function put(signedUrl: string, file: File, onProgress: (pct: number) => void): Promise<void> {
+function put(
+  signedUrl: string,
+  file: File,
+  mime: string,
+  onProgress: (pct: number) => void,
+): Promise<void> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open('PUT', signedUrl);
-    xhr.setRequestHeader('content-type', file.type);
+    // The resolved type, not file.type — storage rejects an empty content-type
+    // against the bucket's allowed_mime_types list.
+    xhr.setRequestHeader('content-type', mime);
     xhr.upload.onprogress = (e) => {
       if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
     };

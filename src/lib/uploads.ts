@@ -58,16 +58,57 @@ export const ACCEPTED_MIME: string[] = Object.values(UPLOAD_RULES).flatMap(
   (r) => [...r.mimeTypes],
 );
 
-/** For the <input accept=""> attribute — a hint to the picker, not a guarantee. */
-export const ACCEPT_ATTR = ACCEPTED_MIME.join(',');
+/**
+ * For the <input accept=""> attribute. Extensions are listed alongside MIME
+ * types because a picker that only knows `image/heic` will grey out .heic files
+ * on systems that do not map the extension to that MIME type.
+ */
+export const ACCEPT_ATTR = [
+  ...ACCEPTED_MIME,
+  '.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif', '.mp4', '.mov', '.webm', '.pdf',
+].join(',');
 
 export const BUCKET = 'order-docs';
 
-export function kindOf(mimeType: string): UploadKind | null {
+/**
+ * Extension fallback for when the browser reports no usable MIME type.
+ *
+ * This is not belt-and-braces, it is load-bearing. Windows derives MIME from the
+ * registry, and `.heic` is usually not registered — so Chrome on Windows hands
+ * back `file.type === ''` for the exact format iPhones produce. Matching on MIME
+ * alone rejects the file the MIME list was extended to accept.
+ *
+ * Extension is the weaker signal (anyone can rename a file), which is why it is
+ * only consulted when MIME is missing or unrecognised, and why the bucket's own
+ * allowed_mime_types still has the final say on what is stored.
+ */
+const EXT_TO_MIME: Record<string, string> = {
+  jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp',
+  heic: 'image/heic', heif: 'image/heif',
+  mp4: 'video/mp4', mov: 'video/quicktime', webm: 'video/webm',
+  pdf: 'application/pdf',
+};
+
+function extensionOf(fileName: string): string {
+  const i = fileName.lastIndexOf('.');
+  return i === -1 ? '' : fileName.slice(i + 1).toLowerCase();
+}
+
+/** The MIME type to trust for this file: what the browser said, or what the name implies. */
+export function effectiveMime(file: { name: string; type: string }): string {
+  if (file.type && kindOfMime(file.type)) return file.type;
+  return EXT_TO_MIME[extensionOf(file.name)] ?? file.type ?? '';
+}
+
+function kindOfMime(mimeType: string): UploadKind | null {
   for (const [kind, rule] of Object.entries(UPLOAD_RULES)) {
     if ((rule.mimeTypes as readonly string[]).includes(mimeType)) return kind as UploadKind;
   }
   return null;
+}
+
+export function kindOf(mimeType: string): UploadKind | null {
+  return kindOfMime(mimeType);
 }
 
 export function humanSize(bytes: number): string {
@@ -78,9 +119,11 @@ export function humanSize(bytes: number): string {
 
 /** Returns a reason the file is unacceptable, or null if it is fine. */
 export function rejectReason(file: { name: string; type: string; size: number }): string | null {
-  const kind = kindOf(file.type);
+  const mime = effectiveMime(file);
+  const kind = kindOfMime(mime);
   if (!kind) {
-    return `${file.name}: unsupported type (${file.type || 'unknown'}). Photos, video or PDF only.`;
+    const shown = file.type || extensionOf(file.name) || 'unknown';
+    return `${file.name}: unsupported type (${shown}). Photos, video or PDF only.`;
   }
   const { maxBytes } = UPLOAD_RULES[kind];
   if (file.size > maxBytes) {

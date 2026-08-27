@@ -38,6 +38,23 @@ const phone = z
     return normalised;
   });
 
+/**
+ * Length caps for the free-text columns. Postgres `text` is unbounded, so without
+ * a limit somewhere a single paste could store megabytes in a column that every
+ * list query reads.
+ *
+ * Defined once and used by the create-order schema below, the completion action,
+ * and the character counters in the completion form — so a limit cannot be
+ * tightened in one place and forgotten in another. Mirrored by CHECK constraints
+ * in 0008.
+ */
+export const TEXT_LIMITS = {
+  work_done: 5000,
+  tech_remarks: 2000,
+  problem_desc: 2000,
+  admin_notes: 2000,
+} as const;
+
 export const createOrderSchema = z.object({
   cust_name: z.string().trim().min(2, 'Customer name is required').max(100, 'Max 100 characters'),
   phone,
@@ -49,8 +66,14 @@ export const createOrderSchema = z.object({
     .min(1, 'Quoted price is required')
     .refine((v) => /^\d+(\.\d{1,2})?$/.test(v), 'Enter an amount, e.g. 250 or 250.00')
     .refine((v) => Number(v) >= 0, 'Price cannot be negative'),
-  problem_desc: z.string().trim().max(2000).optional().or(z.literal('')),
-  admin_notes: z.string().trim().max(2000).optional().or(z.literal('')),
+  problem_desc: z
+    .string().trim()
+    .max(TEXT_LIMITS.problem_desc, `Max ${TEXT_LIMITS.problem_desc} characters`)
+    .optional().or(z.literal('')),
+  admin_notes: z
+    .string().trim()
+    .max(TEXT_LIMITS.admin_notes, `Max ${TEXT_LIMITS.admin_notes} characters`)
+    .optional().or(z.literal('')),
   assigned_tech: z.string().uuid('Choose a technician').optional().or(z.literal('')),
 });
 

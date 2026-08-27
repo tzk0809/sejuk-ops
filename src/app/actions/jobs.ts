@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/supabase/server';
 import { getCurrentUser } from '@/lib/session';
 import { BUCKET, MAX_FILES, rejectReason, storagePath } from '@/lib/uploads';
+import { TEXT_LIMITS } from '@/lib/validation';
 import type { OrderDoc } from '@/lib/types';
 
 export type ActionResult = { ok: true } | { ok: false; message: string };
@@ -177,6 +178,13 @@ export async function completeJob(
 
   if (!fields.work_done.trim()) {
     return { ok: false, message: 'Describe the work done before completing the job.' };
+  }
+
+  if (fields.work_done.length > TEXT_LIMITS.work_done) {
+    return { ok: false, message: `Work done is limited to ${TEXT_LIMITS.work_done} characters.` };
+  }
+  if (fields.tech_remarks.length > TEXT_LIMITS.tech_remarks) {
+    return { ok: false, message: `Remarks are limited to ${TEXT_LIMITS.tech_remarks} characters.` };
   }
 
   const extra = fields.extra_charges.trim();
