@@ -97,7 +97,6 @@ export function OrderForm({ technicians }: { technicians: Tech[] }) {
             defaultValue={prev.phone ?? ''}
             aria-invalid={Boolean(errors.phone?.length)}
           />
-          <p className="text-xs text-muted-foreground">Stored as 60… for WhatsApp.</p>
           <FieldError errors={errors.phone} />
         </div>
 
@@ -185,9 +184,6 @@ export function OrderForm({ technicians }: { technicians: Tech[] }) {
               ))}
             </SelectContent>
           </Select>
-          <p className="text-xs text-muted-foreground">
-            Unassigned orders start as New and can be assigned later.
-          </p>
           <FieldError errors={errors.assigned_tech} />
         </div>
 
