@@ -4,6 +4,17 @@
 // in against the project, which is a detour on a two-day build. The trade-off is
 // that these can drift from the schema — the migrations are the source of truth.
 
+/**
+ * "All statuses" as an explicit URL value. An ABSENT status parameter means the
+ * visitor has just arrived and should get their role's default view, so the two
+ * states must stay distinguishable.
+ *
+ * It lives here, not in the filter component, because a value exported from a
+ * 'use client' module reaches a server component as a client reference rather
+ * than the string itself.
+ */
+export const ALL_STATUSES = 'all';
+
 export const ORDER_STATUS = [
   'new', 'assigned', 'in_progress', 'job_done', 'reviewed', 'closed',
 ] as const;
