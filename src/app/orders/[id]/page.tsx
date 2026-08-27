@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation';
 import { getOrder } from '@/lib/orders';
 import { requireUser } from '@/lib/session';
 import { listActions } from '@/lib/actions';
+import { signDocs } from '@/lib/docs';
+import { OrderDocs } from '@/components/order-docs';
 import { StatusBadge } from '@/components/status-badge';
 import { AuditTrail } from '@/components/audit-trail';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,7 +34,11 @@ export default async function OrderDetailPage({ params, searchParams }: Props) {
   const order = await getOrder(user, id);
   if (!order) notFound();
 
-  const actions = await listActions(order.id);
+  // Signed in parallel with the audit trail; both are independent reads.
+  const [actions, docs] = await Promise.all([
+    listActions(order.id),
+    signDocs(order.order_docs),
+  ]);
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -132,6 +138,17 @@ export default async function OrderDetailPage({ params, searchParams }: Props) {
                 </Field>
               )}
             </dl>
+          </CardContent>
+        </Card>
+      )}
+
+      {(docs.length > 0 || order.work_done) && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Attached files</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <OrderDocs docs={docs} />
           </CardContent>
         </Card>
       )}

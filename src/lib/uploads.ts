@@ -173,3 +173,17 @@ const NOT_PREVIEWABLE = ['image/heic', 'image/heif'];
 
 export const canPreview = (doc: OrderDoc) =>
   isImage(doc) && !NOT_PREVIEWABLE.includes(doc.type);
+
+/**
+ * Video formats a browser will actually play inline.
+ *
+ * Same distinction as canPreview, for the same reason: `video/quicktime` (.mov)
+ * uploads fine and Safari plays it, but Chrome and Firefox generally will not.
+ * Rendering a <video> they cannot decode gives a dead player rather than an
+ * honest "open this file" link.
+ */
+const PLAYABLE_VIDEO = ['video/mp4', 'video/webm'];
+
+export const canPlayInline = (doc: OrderDoc) => PLAYABLE_VIDEO.includes(doc.type);
+
+export const isPdf = (doc: OrderDoc) => doc.type === 'application/pdf';
