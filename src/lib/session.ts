@@ -68,15 +68,11 @@ export async function requireUser(): Promise<User> {
 /**
  * Where each role belongs after signing in.
  *
- * Technicians will land on /jobs once Module 2 exists — a mobile-first view,
- * because the spec says technicians work from phones in the field while admins
- * are at desks. Until then the scoped /orders list serves them.
+ * Two routes rather than one that changes shape: the spec has admins at desks
+ * and technicians on phones in the field, and Module 2 asks for a mobile-first
+ * technician interface optimised for speed. Each page guards itself as well, so
+ * this is convenience — the redirect is not the security boundary.
  */
 export function homePathFor(role: UserRole): string {
-  switch (role) {
-    case 'technician':
-      return '/orders'; // TODO: change to /jobs
-    default:
-      return '/orders';
-  }
+  return role === 'technician' ? '/jobs' : '/orders';
 }
