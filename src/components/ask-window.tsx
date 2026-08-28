@@ -55,9 +55,16 @@ export function AskWindow({
 
   return (
     <div className={compact ? 'space-y-4' : 'space-y-6'}>
+      {/* Sticky in the panel: a long answer scrolls under the box rather than
+          pushing it out of reach, so asking a second question never needs a
+          scroll back up. -mx-4 makes the background full-bleed. */}
       <form
         onSubmit={(e) => { e.preventDefault(); submit(question); }}
-        className="flex gap-2"
+        className={
+          compact
+            ? 'sticky top-0 z-10 -mx-4 flex gap-2 bg-background px-4 pb-3 pt-4'
+            : 'flex gap-2'
+        }
       >
         <Input
           value={question}

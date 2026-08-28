@@ -73,8 +73,10 @@ export function AssistantFab() {
             </button>
           </div>
           {/* Scrolls inside the panel: an answer listing 50 jobs must not push
-              the input off the bottom of the viewport. */}
-          <div className="overflow-y-auto px-4 py-4">
+              the input off the bottom of the viewport. Vertical padding lives on
+              the children rather than here, so the sticky ask-form can span the
+              full width and nothing shows through above it. */}
+          <div className="overflow-y-auto px-4 pb-4">
             <AskWindow autoFocus compact />
           </div>
         </div>
