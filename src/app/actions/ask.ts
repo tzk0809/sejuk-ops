@@ -8,7 +8,7 @@ import { formatAnswer } from '@/lib/ai/answer';
 import type { QueryIntent } from '@/lib/ai/intent';
 
 /**
- * The operations query window, end to end.
+ * The AI assistant, end to end.
  *
  * A server action rather than a route handler, to match the rest of the app —
  * every other write goes through src/app/actions/*. It gets the session cookie
@@ -43,7 +43,7 @@ export async function ask(question: string): Promise<AskResult> {
   const actor = await getCurrentUser();
   if (!actor) return { ok: false, message: 'Your session has expired. Choose a user again.' };
   if (actor.role !== 'manager') {
-    return { ok: false, message: 'The operations query window is available to managers.' };
+    return { ok: false, message: 'The AI assistant is available to managers.' };
   }
 
   // 2. The question is untrusted text, and is bounded before it costs anything.

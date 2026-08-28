@@ -62,7 +62,7 @@ export function AskWindow({
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
           placeholder={compact ? 'Ask about completed jobs…' : 'Ask about completed jobs, technicians or service types…'}
-          aria-label="Ask a question about operations data"
+          aria-label="Ask the AI assistant about completed jobs"
           maxLength={300}
           autoFocus={autoFocus}
           className={compact ? 'h-10' : 'h-11'}

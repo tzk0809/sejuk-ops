@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { MessageCircleQuestionMark, X } from 'lucide-react';
+import { Sparkles, X } from 'lucide-react';
 import { AskWindow } from '@/components/ask-window';
 
 /**
@@ -58,20 +58,15 @@ export function AssistantFab() {
           ref={panelRef}
           role="dialog"
           aria-modal="false"
-          aria-label="Operations query"
+          aria-label="AI assistant"
           className="fixed bottom-24 right-6 z-50 flex max-h-[min(70vh,640px)] w-[min(28rem,calc(100vw-3rem))] flex-col overflow-hidden rounded-xl border bg-background shadow-2xl"
         >
-          <div className="flex items-start justify-between gap-3 border-b px-4 py-3">
-            <div>
-              <p className="text-sm font-semibold">Operations query</p>
-              <p className="text-xs text-muted-foreground">
-                Answers built from retrieved records, not the model&rsquo;s memory.
-              </p>
-            </div>
+          <div className="flex items-center justify-between gap-3 border-b px-4 py-3">
+            <p className="text-sm font-semibold">AI assistant</p>
             <button
               type="button"
               onClick={() => { setOpen(false); buttonRef.current?.focus(); }}
-              aria-label="Close the operations query window"
+              aria-label="Close the AI assistant"
               className="-mr-1 rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
             >
               <X className="size-4" />
@@ -90,10 +85,10 @@ export function AssistantFab() {
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        aria-label={open ? 'Close the operations query window' : 'Ask about operations data'}
+        aria-label={open ? 'Close the AI assistant' : 'Open the AI assistant'}
         className="fixed bottom-6 right-6 z-50 flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
       >
-        {open ? <X className="size-6" /> : <MessageCircleQuestionMark className="size-6" />}
+        {open ? <X className="size-6" /> : <Sparkles className="size-6" />}
       </button>
     </>
   );

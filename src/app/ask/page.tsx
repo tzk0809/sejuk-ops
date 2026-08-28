@@ -3,7 +3,7 @@ import { AccessDenied } from '@/components/access-denied';
 import { AskWindow } from '@/components/ask-window';
 
 /**
- * The operations query window. Managers only.
+ * The AI assistant, as a full page. Managers only.
  *
  * Guarded here AND inside the server action AND inside runQuery. This one is
  * the affordance — it explains rather than 404s — while the action's check is
@@ -18,7 +18,7 @@ export default async function AskPage() {
       <AccessDenied
         user={user}
         title="Managers only"
-        needs="The operations query window reports across every technician's completed work, so it is limited to managers."
+        needs="The AI assistant reports across every technician's completed work, so it is limited to managers."
         backHref="/orders"
         backLabel="Go to orders"
       />
@@ -27,13 +27,7 @@ export default async function AskPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Operations query</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Ask about completed jobs, technician workload and service types in plain English.
-          Answers are built from the records the system retrieves, not from the model&rsquo;s memory.
-        </p>
-      </div>
+      <h1 className="text-2xl font-semibold tracking-tight">AI assistant</h1>
       <AskWindow />
     </div>
   );
