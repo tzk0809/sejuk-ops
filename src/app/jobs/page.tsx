@@ -1,5 +1,5 @@
 import { requireUser } from '@/lib/session';
-import { listMyJobs, listRecentlyCompleted } from '@/lib/jobs';
+import { listMyJobs, listRecentlyCompleted, RECENT_DAYS } from '@/lib/jobs';
 import { JobCard } from '@/components/job-card';
 import { CompletedCard } from '@/components/completed-card';
 import { NotifyCustomer } from '@/components/notify-customer';
@@ -87,7 +87,14 @@ export default async function JobsPage({ searchParams }: Props) {
           which also keeps its customer notification reachable afterwards. */}
       {completed.length > 0 && (
         <section className="space-y-3 pt-2">
-          <h2 className="text-sm font-medium text-muted-foreground">Recently completed</h2>
+          {/* The window is stated rather than left to be inferred: without it a
+              job dropping off the list after a week looks like data loss.
+              RECENT_DAYS is the same constant the query uses, so the label
+              cannot claim a window the rows do not match. */}
+          <div className="flex items-baseline justify-between gap-2">
+            <h2 className="text-sm font-medium text-muted-foreground">Recently completed</h2>
+            <span className="text-xs text-muted-foreground">Last {RECENT_DAYS} days</span>
+          </div>
           <ul className="space-y-2">
             {completed.map((job) => (
               <CompletedCard key={job.id} job={job} />

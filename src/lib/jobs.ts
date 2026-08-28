@@ -59,7 +59,7 @@ export async function getMyJob(
  * and the field view quietly turns into a history page. A week covers a weekend
  * plus slack.
  */
-const RECENT_DAYS = 7;
+export const RECENT_DAYS = 7;
 const RECENT_LIMIT = 10;
 
 /**
@@ -77,6 +77,21 @@ const RECENT_LIMIT = 10;
  * so a bounced job drops out of here and reappears in listMyJobs with no
  * special-casing anywhere.
  *
+ * `closed` is the one status excluded, and it is a deliberate exception to the
+ * rule above rather than a hole in it. `reviewed` lands minutes after completion,
+ * by someone else, while a notification may genuinely still be pending — that is
+ * the case this list exists to survive. `closed` is terminal: it is reached after
+ * review, two people have handled the order, and it has left the workflow. A
+ * technician's phone is the smallest screen in the system, and a card offering an
+ * action on a finished order is noise under a heading that implies otherwise.
+ *
+ * The cost, honestly: this reintroduces a status dependency, so a customer who
+ * rings two days after closure saying nobody told them leaves the technician with
+ * no link — someone else's action removed it, which is the failure mode the
+ * timestamp keying exists to prevent. Accepted because closure means the order
+ * has already passed two people, so a missing notification surfaces through the
+ * business rather than through this card.
+ *
  * Separate from listMyJobs rather than widening it: the two lists answer
  * different questions and want opposite orderings — open work is oldest-first so
  * the queue drains in order, finished work is newest-first so what you just did
@@ -92,6 +107,7 @@ export async function listRecentlyCompleted(
     .select(SELECT)
     .eq('assigned_tech', viewer.id)
     .gte('completed_at', since)
+    .neq('status', 'closed')
     .order('completed_at', { ascending: false })
     .limit(RECENT_LIMIT);
 
