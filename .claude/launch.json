@@ -4,9 +4,9 @@
     {
       "name": "sejuk-ops",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeArgs": ["run", "dev", "--", "--port", "3100"],
       "port": 3100,
-      "autoPort": true
+      "autoPort": false
     }
   ]
 }

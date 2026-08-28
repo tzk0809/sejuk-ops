@@ -51,3 +51,50 @@ export async function getMyJob(
   if (error) throw new Error(`Failed to load job: ${error.message}`);
   return (data as unknown as OrderWithTech) ?? null;
 }
+
+/**
+ * How far back the technician's completed list reaches, and how many rows it
+ * shows. Both are judgement calls with a cost at each end: too short and the
+ * WhatsApp link expires before anyone chases an un-notified customer, too long
+ * and the field view quietly turns into a history page. A week covers a weekend
+ * plus slack.
+ */
+const RECENT_DAYS = 7;
+const RECENT_LIMIT = 10;
+
+/**
+ * What this technician finished recently.
+ *
+ * Keyed on `completed_at`, NOT on `status = 'job_done'`. Status looks like the
+ * obvious filter and is the wrong one: the moment a manager approves the job it
+ * becomes `reviewed`, the row would leave this list, and the customer
+ * notification link would vanish with it — for a reason that has nothing to do
+ * with whether the customer was ever told. A prompt manager would destroy the
+ * link within minutes.
+ *
+ * Keying on the timestamp also composes with the state machine for free. The
+ * trigger clears `completed_at` on `rejected`, and a NULL fails this comparison,
+ * so a bounced job drops out of here and reappears in listMyJobs with no
+ * special-casing anywhere.
+ *
+ * Separate from listMyJobs rather than widening it: the two lists answer
+ * different questions and want opposite orderings — open work is oldest-first so
+ * the queue drains in order, finished work is newest-first so what you just did
+ * is on top. One query serving both needs a sort that is wrong for one of them.
+ */
+export async function listRecentlyCompleted(
+  viewer: Pick<User, 'id'>,
+): Promise<OrderWithTech[]> {
+  const since = new Date(Date.now() - RECENT_DAYS * 86_400_000).toISOString();
+
+  const { data, error } = await db
+    .from('orders')
+    .select(SELECT)
+    .eq('assigned_tech', viewer.id)
+    .gte('completed_at', since)
+    .order('completed_at', { ascending: false })
+    .limit(RECENT_LIMIT);
+
+  if (error) throw new Error(`Failed to load completed jobs: ${error.message}`);
+  return (data ?? []) as unknown as OrderWithTech[];
+}
