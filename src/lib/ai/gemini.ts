@@ -5,7 +5,6 @@ import {
   interpretationSchema,
   type Interpretation,
 } from '@/lib/ai/intent';
-import type { QueryResult } from '@/lib/ai/queries';
 
 /**
  * The two places a language model appears in this module — and neither of them
@@ -26,25 +25,69 @@ import type { QueryResult } from '@/lib/ai/queries';
  */
 
 /**
- * Pinned rather than `gemini-flash-latest`. A model that silently changes under
- * a submitted assessment is a demo that cannot be reproduced; the cost is
- * having to bump this by hand.
+ * Two models, one per call, and the reason is quota rather than capability.
  *
- * Chosen by calling the models endpoint and then actually sending this module's
- * response schema to each candidate, not by assuming an id:
- *   gemini-2.5-flash  retired — "no longer available to new users"
- *   gemini-3.7-flash  returned "currently experiencing high demand"
- *   gemini-3.5-flash  returned the correct intent for all three spec questions
+ * The Gemini free tier allows 20 requests per day PER MODEL
+ * (`GenerateRequestsPerDayPerProjectPerModel-FreeTier`). Answering one question
+ * costs two calls, so a single model would cap the whole feature at ten
+ * questions a day — discovered the hard way, by exhausting gemini-3.5-flash
+ * during testing and watching every question start returning an outage.
  *
- * Flash tier rather than Pro: this call classifies a sentence into one of three
- * operations and copies a name across. Reasoning capacity is not the constraint;
- * latency in front of a manager is.
+ * Because the quota is per model, splitting the two calls across two models
+ * doubles the budget for free. On a paid key both constants would be the same
+ * model and this comment would be a curiosity.
+ *
+ * Both are pinned rather than `-latest`: a model that silently changes under a
+ * submitted assessment is a demo that cannot be reproduced.
+ *
+ * Ids were not assumed. Each candidate was called with this module's real
+ * schema and prompt, and timed:
+ *
+ *   gemini-2.5-flash       retired — "no longer available to new users"
+ *   gemini-3.7-flash       "currently experiencing high demand"
+ *   gemini-3.5-flash       ~3s, correct; quota exhausted during testing
+ *   gemini-3.6-flash       ~39s (!), correct. Reasons at length about a
+ *                          three-way classification, and rejects
+ *                          `thinkingBudget: 0` with 400 invalid argument, so
+ *                          the thinking cannot be turned off. Unusable behind
+ *                          a text box someone is waiting at.
+ *   gemini-3.1-flash-lite  ~1s, correct intent
+ *   gemini-3.5-flash-lite  ~1s, correct phrasing
+ *
+ * The lite tier winning is not a compromise. Choosing between three operations
+ * and copying a name across is not a reasoning problem, and paying 39 seconds
+ * of chain-of-thought for it buys nothing.
  */
-const MODEL = 'gemini-3.5-flash';
 
-/** Bounded so a hung model call cannot hold a request open indefinitely. Both
- *  calls fall back to something correct, so a timeout degrades rather than fails. */
-const TIMEOUT_MS = 12_000;
+/** Question -> intent. */
+const INTERPRET_MODEL = 'gemini-3.1-flash-lite';
+
+/** Rephrasing a sentence that is already correct; a failure here falls back to
+ *  that sentence unchanged. Different model from INTERPRET_MODEL for the quota
+ *  reason above, not because the task needs a different one. */
+const NARRATE_MODEL = 'gemini-3.5-flash-lite';
+
+/** Free-tier exhaustion is recoverable information, not a generic outage, and
+ *  the two want different sentences in front of a user. */
+export class QuotaExceededError extends Error {}
+
+const asQuotaError = (error: unknown): Error => {
+  const message = error instanceof Error ? error.message : String(error);
+  return /429|RESOURCE_EXHAUSTED|exceeded your current quota/i.test(message)
+    ? new QuotaExceededError(message)
+    : (error instanceof Error ? error : new Error(message));
+};
+
+/**
+ * Bounded so a slow model cannot hold a request open indefinitely. Both calls
+ * fall back to something correct, so a timeout degrades rather than fails.
+ *
+ * Eight seconds against a measured ~1s for both models — generous enough to
+ * absorb a slow response, tight enough that a manager is not left staring at a
+ * spinner. This is a ceiling, not a target: it is what caught gemini-3.6-flash
+ * taking 39 seconds, which is exactly the job it exists to do.
+ */
+const TIMEOUT_MS = 8_000;
 
 const apiKey = process.env.GEMINI_API_KEY;
 if (!apiKey) {
@@ -98,19 +141,24 @@ Rules:
  * blast radius is bounded by design rather than by the model's compliance.
  */
 export async function interpret(question: string): Promise<Interpretation> {
-  const response = await withTimeout(
-    ai.models.generateContent({
-      model: MODEL,
-      contents: question,
-      config: {
-        systemInstruction: SYSTEM_PROMPT,
-        responseMimeType: 'application/json',
-        responseSchema: geminiResponseSchema as unknown as Record<string, unknown>,
-        temperature: 0,
-      },
-    }),
-    TIMEOUT_MS,
-  );
+  let response;
+  try {
+    response = await withTimeout(
+      ai.models.generateContent({
+        model: INTERPRET_MODEL,
+        contents: question,
+        config: {
+          systemInstruction: SYSTEM_PROMPT,
+          responseMimeType: 'application/json',
+          responseSchema: geminiResponseSchema as unknown as Record<string, unknown>,
+          temperature: 0,
+        },
+      }),
+      TIMEOUT_MS,
+    );
+  } catch (error) {
+    throw asQuotaError(error);
+  }
 
   const raw = response.text;
   if (!raw) return { supported: false, reason: 'I did not understand that question.' };
@@ -132,25 +180,26 @@ export async function interpret(question: string): Promise<Interpretation> {
 }
 
 /**
- * Result -> prose. Given the retrieved data and the answer already computed
- * from it, produce a more natural phrasing of the SAME facts.
+ * Answer -> better-phrased answer. The model rephrases a sentence that is
+ * already correct; it never sees rows and never summarises them.
  *
- * `deterministic` is passed in and the model is told to rephrase it rather than
- * to summarise raw rows. That is the difference between a formatter and a
- * calculator: there is no arithmetic left to get wrong, because every number
- * is already in the sentence it is being asked to rewrite.
+ * That is the difference between a formatter and a calculator: there is no
+ * arithmetic left to get wrong, because every figure is already present in the
+ * text being rewritten.
+ *
+ * It deliberately does NOT receive the QueryResult. Passing it made the model
+ * paste raw window instants into the reply — "for the window from
+ * 2026-08-27T16:00:00.000Z to..." — because they were in front of it and looked
+ * relevant. The structured result was redundant anyway: formatAnswer has
+ * already put every fact from it into `deterministic`. Sending less is both a
+ * better answer and less data leaving the building.
  */
-export async function narrate(
-  question: string,
-  result: QueryResult,
-  deterministic: string,
-): Promise<string> {
+export async function narrate(question: string, deterministic: string): Promise<string> {
   const response = await withTimeout(
     ai.models.generateContent({
-      model: MODEL,
+      model: NARRATE_MODEL,
       contents: [
         `Question: ${question}`,
-        `Retrieved data: ${JSON.stringify(result)}`,
         `Correct answer: ${deterministic}`,
       ].join('\n\n'),
       config: {

@@ -2,7 +2,7 @@
 
 import { z } from 'zod';
 import { getCurrentUser } from '@/lib/session';
-import { interpret, narrate } from '@/lib/ai/gemini';
+import { interpret, narrate, QuotaExceededError } from '@/lib/ai/gemini';
 import { runQuery, type QueryResult } from '@/lib/ai/queries';
 import { formatAnswer } from '@/lib/ai/answer';
 import type { QueryIntent } from '@/lib/ai/intent';
@@ -63,6 +63,20 @@ export async function ask(question: string): Promise<AskResult> {
     // what happened the first time this path fired, on a transient "model is
     // experiencing high demand" from the API.
     console.error('[ask] interpret failed', error);
+
+    // Free-tier exhaustion and a provider outage are different problems and the
+    // difference is actionable: one resets tomorrow, the other might clear in a
+    // minute. Reporting both as "unavailable" is what made this take an hour to
+    // recognise the first time it happened.
+    if (error instanceof QuotaExceededError) {
+      return {
+        ok: false,
+        message:
+          'The daily AI quota for this demo key has been used up (the Gemini free tier allows ' +
+          '20 requests per model per day). It resets tomorrow — the orders list still has the data.',
+      };
+    }
+
     // A model outage must not read as "no jobs found". It reads as an outage.
     return {
       ok: false,
@@ -98,7 +112,7 @@ export async function ask(question: string): Promise<AskResult> {
   // 6. Phrasing. Decorative by design — if it fails, step 5 is what ships, and
   //    the caller is told which one it got.
   try {
-    const answer = await narrate(q.data, data, deterministic);
+    const answer = await narrate(q.data, deterministic);
     return { ok: true, answer, intent: interpretation.intent, data, phrasedByAi: true };
   } catch {
     return { ok: true, answer: deterministic, intent: interpretation.intent, data, phrasedByAi: false };
