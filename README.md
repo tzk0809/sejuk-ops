@@ -554,6 +554,13 @@ the one I had seen most often.
 - **A completions table**, so a rejected-and-redone job keeps both attempts instead of overwriting
   the first.
 - **A `service_types` lookup table**, so adding a service line is an insert rather than a migration.
+- **Pagination on the order list.** `listOrders` has no `LIMIT` — every row matching the filters is
+  fetched, serialised and rendered, and the "N orders" heading is the length of that array. At 36
+  seeded orders it is invisible; at five branches doing fifty jobs a day it is tens of thousands of
+  rows in a single response. Filters and search hide the problem rather than solve it, because "All
+  statuses" is one click away. It fits the existing pattern — the filters already live in
+  `searchParams`, so the page belongs there too — and it should be keyset rather than `OFFSET`,
+  since `OFFSET` still walks every row it skips.
 - **Branches, crews and scheduling** — the three things the brief describes that this build does
   not model.
 - **A paid AI tier and a rate limit**, since the free quota caps the assistant at roughly twenty
