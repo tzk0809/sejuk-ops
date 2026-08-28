@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 import { listOrders, isSortKey } from '@/lib/orders';
 import { requireUser } from '@/lib/session';
 import { OrderFilters } from '@/components/order-filters';
+import { AccessDenied } from '@/components/access-denied';
 import { StatusBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,15 +17,33 @@ type Params = Promise<{ [k: string]: string | string[] | undefined }>;
 
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
 
-const HEADING: Record<string, string> = {
-  admin: 'Orders',
-  manager: 'Orders',
-  technician: 'My jobs',
-};
-
 export default async function OrdersPage({ searchParams }: { searchParams: Params }) {
   const sp = await searchParams;
   const user = await requireUser();
+
+  // The desk view. Technicians have /jobs, which answers the same question in a
+  // form built for a phone — and having both meant a technician saw their own
+  // work described two different ways: "2 open · 1 in progress" there against
+  // "10 orders assigned to you" here. Both were true, which is what made it
+  // confusing.
+  //
+  // Checked before the query rather than after: there is no reason to fetch rows
+  // for a page that will not render them.
+  //
+  // This is the affordance, not the boundary. listOrders() still scopes
+  // technicians to their own rows, because a guard on one page is not a reason to
+  // stop restricting the data — see lib/orders.ts.
+  if (user.role === 'technician') {
+    return (
+      <AccessDenied
+        user={user}
+        title="Admins and managers only"
+        needs="This is the desk view for assigning and reviewing work. Your own jobs are on the field view, which is built for a phone."
+        backHref="/jobs"
+        backLabel="Go to my jobs"
+      />
+    );
+  }
 
   // An absent status means no status filter. The per-role default view is
   // applied once at sign-in (landingPathFor) rather than on every param-less
@@ -51,10 +70,9 @@ export default async function OrdersPage({ searchParams }: { searchParams: Param
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">{HEADING[user.role]}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Orders</h1>
           <p className="text-sm text-muted-foreground">
             {orders.length} {orders.length === 1 ? 'order' : 'orders'}
-            {user.role === 'technician' && ' assigned to you'}
           </p>
         </div>
         {user.role === 'admin' && (
