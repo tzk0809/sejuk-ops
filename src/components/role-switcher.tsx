@@ -28,7 +28,10 @@ export function RoleSwitcher({ users, currentId }: { users: User[]; currentId: s
         startTransition(() => void switchUser(id, true));
       }}
     >
-      <SelectTrigger className="w-[230px]" aria-label="Acting as">
+      {/* 230px does not fit beside the brand and sign-out on a 375px screen — it
+          forced the brand to wrap to three lines and burst out of the header.
+          Narrower on mobile, full width from sm up. */}
+      <SelectTrigger className="w-[150px] sm:w-[230px]" aria-label="Acting as">
         <SelectValue>
           {(v) => {
             const u = users.find((x) => x.id === v);

@@ -24,8 +24,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="en">
       <body className="min-h-dvh bg-muted/30 antialiased">
         <header className="sticky top-0 z-40 border-b bg-background">
-          <div className="mx-auto flex h-14 max-w-7xl items-center gap-4 px-4">
-            <Link href="/" className="font-semibold tracking-tight">
+          <div className="mx-auto flex h-14 max-w-7xl items-center gap-2 px-4 sm:gap-4">
+            <Link href="/" className="shrink-0 whitespace-nowrap font-semibold tracking-tight">
               Sejuk Sejuk <span className="font-normal text-muted-foreground">Ops</span>
             </Link>
 
