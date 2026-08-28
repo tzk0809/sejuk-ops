@@ -1,7 +1,6 @@
 'use client';
 
 import { useTransition } from 'react';
-import { useRouter } from 'next/navigation';
 import { switchUser } from '@/app/actions/session';
 import type { User } from '@/lib/types';
 import {
@@ -13,7 +12,6 @@ const ROLE_LABEL: Record<string, string> = {
 };
 
 export function RoleSwitcher({ users, currentId }: { users: User[]; currentId: string }) {
-  const router = useRouter();
   const [pending, startTransition] = useTransition();
 
   return (
@@ -22,10 +20,12 @@ export function RoleSwitcher({ users, currentId }: { users: User[]; currentId: s
       disabled={pending}
       onValueChange={(id) => {
         if (typeof id !== 'string' || id === currentId) return;
-        startTransition(async () => {
-          await switchUser(id);
-          router.refresh();
-        });
+        // `true` sends the caller to the new role's landing view. Switching who
+        // you are is exactly the moment the role's default filter applies — a
+        // manager who switches in should arrive at the review queue, not at an
+        // unfiltered list of every order. The sign-in picker already does this;
+        // the dropdown was the one path that did not.
+        startTransition(() => void switchUser(id, true));
       }}
     >
       <SelectTrigger className="w-[230px]" aria-label="Acting as">

@@ -92,6 +92,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Param
             <TableRow>
               <TableHead className="w-[110px]">Order No</TableHead>
               <TableHead>Customer</TableHead>
+              <TableHead className="w-[130px]">Phone</TableHead>
               <TableHead className="w-[120px]">Service</TableHead>
               <TableHead className="min-w-[220px]">Problem</TableHead>
               <TableHead className="w-[130px]">Technician</TableHead>
@@ -103,7 +104,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Param
           <TableBody>
             {orders.length === 0 && (
               <TableRow>
-                <TableCell colSpan={8} className="h-28 text-center text-muted-foreground">
+                <TableCell colSpan={9} className="h-28 text-center text-muted-foreground">
                   No orders match these filters.
                 </TableCell>
               </TableRow>
@@ -116,6 +117,12 @@ export default async function OrdersPage({ searchParams }: { searchParams: Param
                   </Link>
                 </TableCell>
                 <TableCell className="font-medium">{o.cust_name}</TableCell>
+                {/* tel: so an admin on a laptop with a softphone, or on a tablet,
+                    can call without retyping. Tabular figures keep the column
+                    aligned, which matters for scanning a list of numbers. */}
+                <TableCell className="tabular-nums">
+                  <a href={`tel:+${o.phone}`} className="hover:underline">{o.phone}</a>
+                </TableCell>
                 <TableCell>{serviceLabel(o.service_type)}</TableCell>
                 <TableCell className="text-muted-foreground" title={o.problem_desc ?? undefined}>
                   {truncate(o.problem_desc, 55)}

@@ -5,6 +5,7 @@ import { getCurrentUser, listUsers, homePathFor } from '@/lib/session';
 import { RoleSwitcher } from '@/components/role-switcher';
 import { Toaster } from '@/components/ui/sonner';
 import { AssistantFab } from '@/components/assistant-fab';
+import { SignOutButton } from '@/components/sign-out-button';
 
 export const metadata: Metadata = {
   title: 'Sejuk Sejuk Service — Operations',
@@ -41,6 +42,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <div className="ml-auto flex items-center gap-3">
                   <span className="hidden text-xs text-muted-foreground sm:inline">Acting as</span>
                   <RoleSwitcher users={users} currentId={user.id} />
+                  <SignOutButton />
                 </div>
               </>
             )}
