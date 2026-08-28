@@ -2,7 +2,7 @@ import { requireUser } from '@/lib/session';
 import { listMyJobs, listRecentlyCompleted, RECENT_DAYS } from '@/lib/jobs';
 import { JobCard } from '@/components/job-card';
 import { CompletedCard } from '@/components/completed-card';
-import { NotifyCustomer } from '@/components/notify-customer';
+import { CompletionBanner } from '@/components/completion-banner';
 import { AccessDenied } from '@/components/access-denied';
 
 type Props = {
@@ -57,18 +57,7 @@ export default async function JobsPage({ searchParams }: Props) {
         </p>
       </div>
 
-      {justCompleted && (
-        <div className="flex flex-col gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 sm:flex-row sm:items-center">
-          <div className="min-w-0 flex-1">
-            <p className="font-semibold">{justCompleted.order_no} is completed.</p>
-            <p className="truncate">Notify {justCompleted.cust_name} now.</p>
-          </div>
-          {/* The reason the banner exists rather than just confirming. Notifying
-              is the next thing the technician wants to do, and the card version
-              below is a recovery path, not the primary one. */}
-          <NotifyCustomer job={justCompleted} variant="primary" />
-        </div>
-      )}
+      {justCompleted && <CompletionBanner job={justCompleted} />}
 
       {jobs.length === 0 ? (
         <div className="rounded-xl border bg-background p-8 text-center">

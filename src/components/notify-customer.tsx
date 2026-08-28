@@ -1,3 +1,5 @@
+'use client';
+
 import { MessageCircle } from 'lucide-react';
 import { waLink, customerCompletionMessage } from '@/lib/notify';
 import type { OrderWithTech } from '@/lib/types';
@@ -23,15 +25,19 @@ import type { OrderWithTech } from '@/lib/types';
  * only a human can perform. The card has no supporting text, so its button has to
  * name the action instead; the aria-label carries the rest.
  *
- * A server component: an anchor needs no state, and this screen is a phone in the
- * field, so it costs no client JavaScript.
+ * A client component only because the banner needs to know when the link is
+ * opened, so it can stop telling the technician to do something they have just
+ * done. The card passes no callback and is inert.
  */
 export function NotifyCustomer({
   job,
   variant = 'quiet',
+  onOpen,
 }: {
   job: OrderWithTech;
   variant?: 'primary' | 'quiet';
+  /** Fired when the link is opened. Not a record that anything was sent. */
+  onOpen?: () => void;
 }) {
   // Module 3's trigger condition, evaluated against the row rather than fired by
   // the completion write — so it is true for as long as the job stays completed.
@@ -45,6 +51,7 @@ export function NotifyCustomer({
       href={waLink(job.phone, message)}
       target="_blank"
       rel="noopener noreferrer"
+      onClick={onOpen}
       aria-label={`Notify ${job.cust_name} on WhatsApp that ${job.order_no} is complete`}
       // emerald-700, not the 600 that reads as the more natural "success" green:
       // white on 600 measures 3.65:1, under the 4.5:1 WCAG AA floor for 14px
