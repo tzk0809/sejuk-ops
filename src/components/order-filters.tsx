@@ -27,7 +27,22 @@ export function OrderFilters() {
   const [, startTransition] = useTransition();
   const [q, setQ] = useState(params.get('q') ?? '');
 
-  const push = (patch: Record<string, string | null | undefined>) => {
+  /**
+   * `replace` for typing, `push` for choosing.
+   *
+   * A deliberate act — picking a status, a service, a sort, or clearing — should
+   * be undoable with the browser Back button, so it earns a history entry.
+   * Search does not: the box is debounced at 300ms, so a single query would
+   * still leave two or three entries behind and Back would walk the user
+   * through their own keystrokes.
+   *
+   * Everything used `replace`, which is why Back left the list entirely rather
+   * than stepping back a filter — found by the test plan, row 4.10.
+   */
+  const apply = (
+    patch: Record<string, string | null | undefined>,
+    { replace = false } = {},
+  ) => {
     const next = new URLSearchParams(params.toString());
     for (const [k, v] of Object.entries(patch)) {
       // status is never removed: an absent status re-triggers the role default.
@@ -35,14 +50,15 @@ export function OrderFilters() {
       else if (!v || v === ALL_SERVICES) next.delete(k);
       else next.set(k, v);
     }
-    startTransition(() => router.replace(`${pathname}?${next.toString()}`));
+    const url = `${pathname}?${next.toString()}`;
+    startTransition(() => (replace ? router.replace(url) : router.push(url)));
   };
 
   // Debounce the search box so typing does not fire a query per keystroke.
   useEffect(() => {
     const current = params.get('q') ?? '';
     if (q === current) return;
-    const t = setTimeout(() => push({ q: q || null }), 300);
+    const t = setTimeout(() => apply({ q: q || null }, { replace: true }), 300);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q]);
@@ -61,7 +77,7 @@ export function OrderFilters() {
         aria-label="Search orders"
       />
 
-      <Select value={params.get('status') ?? ALL_STATUSES} onValueChange={(v) => push({ status: v as string | null })}>
+      <Select value={params.get('status') ?? ALL_STATUSES} onValueChange={(v) => apply({ status: v as string | null })}>
         <SelectTrigger className="h-9 w-[150px] bg-background" aria-label="Filter by status">
           {/* base-ui renders the raw stored value unless given a formatter */}
           <SelectValue>
@@ -76,7 +92,7 @@ export function OrderFilters() {
         </SelectContent>
       </Select>
 
-      <Select value={params.get('service') ?? ALL_SERVICES} onValueChange={(v) => push({ service: v as string | null })}>
+      <Select value={params.get('service') ?? ALL_SERVICES} onValueChange={(v) => apply({ service: v as string | null })}>
         <SelectTrigger className="h-9 w-[150px] bg-background" aria-label="Filter by service type">
           <SelectValue>
             {(v) => SERVICE_TYPE_LABEL[v as ServiceType] ?? 'All services'}
@@ -90,7 +106,7 @@ export function OrderFilters() {
         </SelectContent>
       </Select>
 
-      <Select value={params.get('sort') ?? 'newest'} onValueChange={(v) => push({ sort: v as string | null })}>
+      <Select value={params.get('sort') ?? 'newest'} onValueChange={(v) => apply({ sort: v as string | null })}>
         <SelectTrigger className="h-9 w-[150px] bg-background" aria-label="Sort orders">
           <SelectValue>
             {(v) => SORT_OPTIONS.find(([key]) => key === v)?.[1] ?? 'Newest first'}
@@ -108,7 +124,7 @@ export function OrderFilters() {
           variant="ghost" size="sm"
           onClick={() => {
             setQ('');
-            router.replace(`${pathname}?status=${ALL_STATUSES}`);
+            router.push(`${pathname}?status=${ALL_STATUSES}`);
           }}
         >
           Clear
