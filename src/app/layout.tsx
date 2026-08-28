@@ -4,6 +4,7 @@ import './globals.css';
 import { getCurrentUser, listUsers, homePathFor } from '@/lib/session';
 import { RoleSwitcher } from '@/components/role-switcher';
 import { Toaster } from '@/components/ui/sonner';
+import { AssistantFab } from '@/components/assistant-fab';
 
 export const metadata: Metadata = {
   title: 'Sejuk Sejuk Service — Operations',
@@ -46,6 +47,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </div>
         </header>
         <main className="mx-auto max-w-7xl px-4 py-6">{children}</main>
+        {/* Floating, so the assistant is reachable from whatever screen raised
+            the question rather than from a route the manager has to navigate to
+            and back from. Managers only — see the component. */}
+        {user?.role === 'manager' && <AssistantFab />}
         <Toaster />
       </body>
     </html>

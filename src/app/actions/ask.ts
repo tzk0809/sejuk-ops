@@ -56,7 +56,13 @@ export async function ask(question: string): Promise<AskResult> {
   let interpretation;
   try {
     interpretation = await interpret(q.data);
-  } catch {
+  } catch (error) {
+    // Logged, not swallowed. Without this line a provider outage, a quota
+    // rejection and a bug in our own parsing all reach the user as the same
+    // sentence and leave nothing behind to tell them apart — which is exactly
+    // what happened the first time this path fired, on a transient "model is
+    // experiencing high demand" from the API.
+    console.error('[ask] interpret failed', error);
     // A model outage must not read as "no jobs found". It reads as an outage.
     return {
       ok: false,
