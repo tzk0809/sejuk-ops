@@ -156,12 +156,39 @@ commit;
 -- verification
 select status, count(*) from orders group by status order by status;
 
+-- Windows are MALAYSIAN calendar boxes, not UTC ones.
+--
+-- This block used to read `current_date` and `date_trunc('week', now())`, which
+-- Supabase evaluates in UTC. Malaysia is UTC+8, so those draw their edges eight
+-- hours late: a job finished at 00:56 on Friday in Kuala Lumpur is Thursday
+-- 16:56 UTC and was filed under the wrong day. It under-reported "today" as 1
+-- when the answer was 3 — while the header comment above claimed 3, which is
+-- what the seed was built to produce. The comment and the query disagreed, and
+-- the query was the one that was wrong.
+--
+-- `at time zone 'Asia/Kuala_Lumpur'` twice is not a typo. The first converts
+-- the timestamptz to a Malaysian wall clock (timestamptz -> timestamp), the
+-- second reads that wall clock as Malaysian and converts back to an instant
+-- (timestamp -> timestamptz). Truncating in between gives a Malaysian midnight.
+--
+-- Half-open [from, to) throughout, so a job completed at exactly midnight falls
+-- in one bucket rather than two. Same rule as resolveWindow in src/lib/time.ts.
+with bounds as (
+  select (date_trunc('day',  now() at time zone 'Asia/Kuala_Lumpur')
+            at time zone 'Asia/Kuala_Lumpur') as day_start,
+         (date_trunc('week', now() at time zone 'Asia/Kuala_Lumpur')
+            at time zone 'Asia/Kuala_Lumpur') as week_start   -- Monday-based
+)
 select u.name as technician,
-       count(*) filter (where o.completed_at >= date_trunc('week', now()))       as this_week,
-       count(*) filter (where o.completed_at >= now() - interval '14 days'
-                          and o.completed_at <  date_trunc('week', now()))       as earlier,
-       count(*) filter (where o.completed_at::date = current_date)               as today
-  from orders o join users u on u.id = o.assigned_tech
+       count(*) filter (where o.completed_at >= b.week_start)              as this_week,
+       count(*) filter (where o.completed_at >= b.week_start - interval '7 days'
+                          and o.completed_at <  b.week_start)              as last_week,
+       count(*) filter (where o.completed_at >= b.day_start
+                          and o.completed_at <  b.day_start + interval '1 day')
+                                                                          as today
+  from orders o
+  join users u on u.id = o.assigned_tech
+ cross join bounds b
  where o.completed_at is not null
  group by u.name order by this_week desc;
 

@@ -1,5 +1,6 @@
 import { ORDER_STATUS_LABEL, SERVICE_TYPE_LABEL } from '@/lib/types';
 import type { OrderStatus, ServiceType } from '@/lib/types';
+import { TZ } from '@/lib/time';
 
 /**
  * Every timestamp column is `timestamptz`, so Postgres hands back an instant in
@@ -13,11 +14,11 @@ import type { OrderStatus, ServiceType } from '@/lib/types';
  * server and client renders identical, so a formatted date moved into a client
  * component later cannot produce a hydration mismatch.
  *
- * Hard-coded because the company operates in one country. A business spanning
- * timezones would store the branch's zone and format per-branch, which is a
- * different feature, not a config value.
+ * TZ itself lives in lib/time.ts, because "the company operates in one
+ * timezone" is a business fact that display and query boundaries both consume.
+ * This module owns only the second half of the argument: that RENDERING must
+ * pin a zone. lib/time.ts owns which zone, and why a constant is safe.
  */
-const TZ = 'Asia/Kuala_Lumpur';
 
 export const money = (v: string | number | null | undefined) =>
   v === null || v === undefined
