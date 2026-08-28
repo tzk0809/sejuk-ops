@@ -101,13 +101,31 @@ it — so the same instant renders identically on a server, a laptop and a techn
 
 This turns out to matter far more than formatting. See the AI section.
 
-### 5. Technicians are deactivated, never deleted
+### 5. An order can exist before anyone is assigned to it
+
+`assigned_tech` is **nullable**. An order starts as `new` with no technician, and becomes
+`assigned` when an admin picks one.
+
+**Why:** work does not arrive at the same rate that people are free to do it. On a Monday morning
+an admin may take twenty calls before deciding who goes where, and the alternative — requiring a
+technician at creation — would force that decision at the worst possible moment, or invite a
+placeholder technician who then owns jobs nobody is actually doing. Taking the order is one job;
+assigning it is another, done later and often by someone else.
+
+It also makes the backlog a queryable fact rather than a convention: unassigned work is
+`assigned_tech is null`, which is what an admin's landing view filters on. There are three such
+orders in the seed.
+
+**Cost:** every query that joins the technician has to tolerate a null, and the order list renders
+"Unassigned" rather than a name. That is a small price for a state the business genuinely has.
+
+### 6. Technicians are deactivated, never deleted
 
 `assigned_tech` is `on delete restrict`. A hard delete that would orphan completed jobs fails
 loudly instead of silently nulling history — `on delete set null` would have destroyed exactly the
 data the AI module reports on.
 
-### 6. Completing a job is one database call — but uploading files is not (Module 2)
+### 7. Completing a job is one database call — but uploading files is not (Module 2)
 
 Completion is two writes: save what the technician recorded, and log the completed action that moves the state machine and stamps completed_at. Split across two supabase-js calls, a failure between them leaves work_done saved on a job still showing In Progress — the technician believes they submitted, and the manager never sees it in the review queue.
 
@@ -119,7 +137,7 @@ The two decisions look inconsistent and are the same principle: make the unit of
 
 > supabase/migrations/0007_complete_job.sql
 
-### 7. WhatsApp: a deep link now, automation in production (Module 3)
+### 8. WhatsApp: a deep link now, automation in production (Module 3)
 
 The brief asks for "a deep-link URL with a pre-filled message", and that is what I built.
 `wa.me/<phone>?text=<message>` opens WhatsApp with the message composed but unsent — a human taps
@@ -308,8 +326,8 @@ compressor fault?" is a genuine similarity question. That is a search feature, n
 2. **The query surface.** The model emits a name and an args object; both are parsed by zod; an
    unrecognised value is a rejection, not a fallthrough. **Model output is untrusted input** — the
    same treatment as a request body off the internet, because that is what it is.
-3. **Authorization**, which is not the same thing. Checked in the page, again in the action, and
-   again in `runQuery`. The AI layer must not become a second, unscoped read path.
+3. **Authorization**, which is not the same thing. Checked in the server action, and again in
+   `runQuery`. The AI layer must not become a second, unscoped read path.
 4. **Exfiltration.** Results go to Google, so **the projection is part of the control**. Every
    query names its columns. No query in this module can return a customer name, phone, address,
    price, payment, document, admin note or technician remark — because none of them are selected.
