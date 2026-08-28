@@ -17,6 +17,12 @@ import type { OrderWithTech } from '@/lib/types';
  * recovery path on a card, for the refresh, the flat battery, and the customer
  * ringing the next day. Different moments, different weight.
  *
+ * They are labelled differently for the same reason. The banner already says
+ * "Notify <customer> now" beside it, so its button can name the mechanism —
+ * "Open WhatsApp" is what actually happens, and it does not promise a send that
+ * only a human can perform. The card has no supporting text, so its button has to
+ * name the action instead; the aria-label carries the rest.
+ *
  * A server component: an anchor needs no state, and this screen is a phone in the
  * field, so it costs no client JavaScript.
  */
@@ -40,15 +46,19 @@ export function NotifyCustomer({
       target="_blank"
       rel="noopener noreferrer"
       aria-label={`Notify ${job.cust_name} on WhatsApp that ${job.order_no} is complete`}
+      // emerald-700, not the 600 that reads as the more natural "success" green:
+      // white on 600 measures 3.65:1, under the 4.5:1 WCAG AA floor for 14px
+      // text. 700 gives 5.48:1. This is a screen used outdoors on a phone, so
+      // contrast is a working requirement rather than a compliance checkbox.
       // min-h-11 on both: small does not mean fiddly on a phone.
       className={
         primary
-          ? 'flex min-h-11 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/80'
+          ? 'flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-lg bg-emerald-700 px-5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-800 active:bg-emerald-900'
           : 'flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg border px-3 text-sm font-medium active:bg-muted'
       }
     >
       <MessageCircle className="size-4" aria-hidden />
-      {primary ? 'Notify customer' : 'Notify'}
+      {primary ? 'Open WhatsApp' : 'Notify'}
     </a>
   );
 }

@@ -60,10 +60,8 @@ export default async function JobsPage({ searchParams }: Props) {
       {justCompleted && (
         <div className="flex flex-col gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 sm:flex-row sm:items-center">
           <div className="min-w-0 flex-1">
-            <p className="font-medium">{justCompleted.order_no} marked done.</p>
-            <p className="truncate">
-              {justCompleted.cust_name} — with your manager for review.
-            </p>
+            <p className="font-semibold">{justCompleted.order_no} is completed.</p>
+            <p className="truncate">Notify {justCompleted.cust_name} now.</p>
           </div>
           {/* The reason the banner exists rather than just confirming. Notifying
               is the next thing the technician wants to do, and the card version
