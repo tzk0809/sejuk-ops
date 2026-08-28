@@ -35,6 +35,18 @@ export const dateTime = (iso: string | null) =>
     { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
       timeZone: TZ });
 
+/**
+ * Time without the date, for the WhatsApp completion message. The customer is
+ * reading it the same day the job was done, so the date is noise — and a message
+ * to a person should read like one.
+ *
+ * `hour: 'numeric'` rather than '2-digit' so it renders "2:30 pm", not
+ * "02:30 pm". Noon and midnight still come out as 12, not 0.
+ */
+export const timeOnly = (iso: string | null) =>
+  !iso ? '—' : new Date(iso).toLocaleTimeString('en-MY',
+    { hour: 'numeric', minute: '2-digit', timeZone: TZ });
+
 export const serviceLabel = (s: ServiceType) => SERVICE_TYPE_LABEL[s] ?? s;
 export const statusLabel = (s: OrderStatus) => ORDER_STATUS_LABEL[s] ?? s;
 
