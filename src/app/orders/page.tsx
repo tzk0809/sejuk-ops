@@ -99,12 +99,13 @@ export default async function OrdersPage({ searchParams }: { searchParams: Param
               <TableHead className="w-[120px]">Status</TableHead>
               <TableHead className="w-[110px] text-right">Quoted</TableHead>
               <TableHead className="w-[110px]">Created</TableHead>
+              <TableHead className="w-[80px] text-right"><span className="sr-only">Actions</span></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {orders.length === 0 && (
               <TableRow>
-                <TableCell colSpan={9} className="h-28 text-center text-muted-foreground">
+                <TableCell colSpan={10} className="h-28 text-center text-muted-foreground">
                   No orders match these filters.
                 </TableCell>
               </TableRow>
@@ -135,6 +136,19 @@ export default async function OrdersPage({ searchParams }: { searchParams: Param
                 </TableCell>
                 <TableCell className="text-right tabular-nums">{money(o.quoted_price)}</TableCell>
                 <TableCell className="text-muted-foreground">{shortDate(o.created_at)}</TableCell>
+                {/* The order number is already a link, but one narrow cell being
+                    the only target is not discoverable — an explicit action is
+                    what an ops table is expected to have. Same destination, so
+                    this is an affordance rather than a second route. */}
+                <TableCell className="text-right">
+                  <Link
+                    href={`/orders/${o.id}`}
+                    aria-label={`View order ${o.order_no}`}
+                    className="inline-flex h-8 items-center rounded-md border px-3 text-xs font-medium hover:bg-muted"
+                  >
+                    View
+                  </Link>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
