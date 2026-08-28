@@ -86,8 +86,25 @@ export function AssistantFab() {
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-label={open ? 'Close the AI assistant' : 'Open the AI assistant'}
-        className="fixed bottom-6 right-6 z-50 flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        className="group fixed bottom-6 right-6 z-50 flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
       >
+        {/* A label on hover, because a lone icon in the corner of an operations
+            tool does not say what it does. CSS rather than the `title`
+            attribute: that one waits about a second, is styled by the OS, and
+            never appears for a keyboard user — so this reveals on
+            focus-visible too.
+
+            Only while closed. Once the panel is open it is titled "AI
+            assistant" three centimetres away, and the button's job has changed
+            to closing it. */}
+        {!open && (
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute right-full mr-3 whitespace-nowrap rounded-md bg-foreground px-2.5 py-1.5 text-xs font-medium text-background opacity-0 shadow-md transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+          >
+            AI assistant
+          </span>
+        )}
         {open ? <X className="size-6" /> : <Sparkles className="size-6" />}
       </button>
     </>

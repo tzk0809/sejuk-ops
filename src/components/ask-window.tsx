@@ -15,9 +15,12 @@ import { serviceLabel, shortDate } from '@/lib/format';
  * miscounts or invents an order number, the authoritative list is sitting
  * directly below it — the reader does not have to take the sentence on trust.
  *
- * The intent is shown too. A manager can see that "last week" was read as
- * LAST_WEEK and not THIS_WEEK, which turns a wrong answer into an obviously
- * wrong answer instead of a plausible one.
+ * `ask` still returns the parsed intent and the resolved window, and the panel
+ * deliberately no longer shows them. The auditability they gave — seeing that
+ * "last week" was read as LAST_WEEK and resolved to two specific instants — now
+ * rests on the window label inside the answer itself ("17–23 Aug 2026"), which
+ * is the part a manager would actually check. The rest was developer detail in
+ * a manager's panel.
  */
 
 /** Real questions from the spec, so the window is usable without instructions. */
@@ -139,20 +142,6 @@ export function AskWindow({
             />
           )}
 
-          <details className="text-xs text-muted-foreground">
-            <summary className="cursor-pointer select-none hover:text-foreground">
-              How this was answered
-            </summary>
-            <div className="mt-2 space-y-1 rounded-md border bg-muted/40 p-3 font-mono">
-              <p>operation: {result.intent.operation}</p>
-              <p>dateRange: {result.intent.dateRange}</p>
-              {result.intent.technicianName && <p>technician: {result.intent.technicianName}</p>}
-              {result.intent.serviceType && <p>serviceType: {result.intent.serviceType}</p>}
-              {'window' in result.data && result.data.window && (
-                <p>window: {result.data.window.from} → {result.data.window.to}</p>
-              )}
-            </div>
-          </details>
         </div>
       )}
     </div>
