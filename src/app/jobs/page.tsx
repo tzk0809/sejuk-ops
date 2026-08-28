@@ -2,6 +2,7 @@ import { requireUser } from '@/lib/session';
 import { listMyJobs, listRecentlyCompleted } from '@/lib/jobs';
 import { JobCard } from '@/components/job-card';
 import { CompletedCard } from '@/components/completed-card';
+import { NotifyCustomer } from '@/components/notify-customer';
 import { AccessDenied } from '@/components/access-denied';
 
 type Props = {
@@ -57,9 +58,17 @@ export default async function JobsPage({ searchParams }: Props) {
       </div>
 
       {justCompleted && (
-        <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-          <p className="font-medium">{justCompleted.order_no} marked done.</p>
-          <p>{justCompleted.cust_name} — it is with your manager for review.</p>
+        <div className="flex flex-col gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 sm:flex-row sm:items-center">
+          <div className="min-w-0 flex-1">
+            <p className="font-medium">{justCompleted.order_no} marked done.</p>
+            <p className="truncate">
+              {justCompleted.cust_name} — with your manager for review.
+            </p>
+          </div>
+          {/* The reason the banner exists rather than just confirming. Notifying
+              is the next thing the technician wants to do, and the card version
+              below is a recovery path, not the primary one. */}
+          <NotifyCustomer job={justCompleted} variant="primary" />
         </div>
       )}
 
