@@ -73,9 +73,61 @@ export const queryIntentSchema = z.object({
 export type QueryIntent = z.infer<typeof queryIntentSchema>;
 
 /**
- * The JSON Schema handed to Gemini. Derived from the zod schema rather than
- * written twice, so the model's instructions and the server's validation cannot
- * drift apart — the classic way this pattern rots is a fourth enum value added
- * to the prompt and forgotten in the validator.
+ * What the model actually returns: an intent, or a refusal.
+ *
+ * The envelope exists because a schema that only describes an intent forces the
+ * model to produce one for every input. Asked "what is our refund policy?" it
+ * would invent a LIST_JOBS. Making "I can't answer that" a first-class, typed
+ * outcome is how the module handles being asked something it has no query for —
+ * the alternative is a plausible answer to a question nobody asked.
  */
-export const queryIntentJsonSchema = z.toJSONSchema(queryIntentSchema);
+export const interpretationSchema = z.discriminatedUnion('supported', [
+  z.object({ supported: z.literal(true), intent: queryIntentSchema }),
+  z.object({ supported: z.literal(false), reason: z.string().max(300) }),
+]);
+
+export type Interpretation = z.infer<typeof interpretationSchema>;
+
+/**
+ * The response schema handed to Gemini, in its OpenAPI-subset dialect.
+ *
+ * The object shape is written out here while zod above validates it — the two
+ * descriptions of the same thing that could drift. What CANNOT drift is the
+ * part that matters: every enum below is spread from the same constant the zod
+ * schema uses, so a new period or service type is impossible to add to one and
+ * forget in the other. Generating this from zod was rejected because
+ * z.toJSONSchema emits keys ($schema, additionalProperties) that Gemini
+ * rejects, and stripping them is more fragile than sharing the arrays.
+ */
+export const geminiResponseSchema = {
+  type: 'object',
+  properties: {
+    supported: {
+      type: 'boolean',
+      description: 'False if the question is not about completed service jobs or technicians.',
+    },
+    reason: {
+      type: 'string',
+      description: 'When unsupported, one short sentence saying what cannot be answered.',
+    },
+    intent: {
+      type: 'object',
+      properties: {
+        operation: { type: 'string', enum: [...OPERATION] },
+        technicianName: {
+          type: 'string',
+          description: 'Technician name exactly as the user wrote it. Omit if none was named.',
+        },
+        serviceType: { type: 'string', enum: [...SERVICE_TYPE] },
+        dateRange: {
+          type: 'string',
+          enum: [...REPORT_PERIOD],
+          description:
+            'Required. Never compute a date yourself — pick the closest word. ALL_TIME if no period was mentioned.',
+        },
+      },
+      required: ['operation', 'dateRange'],
+    },
+  },
+  required: ['supported'],
+} as const;
