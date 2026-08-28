@@ -13,13 +13,13 @@ import { AskWindow } from '@/components/ask-window';
  * a page scrolled to the top with their filters intact but their place lost. A
  * panel over the current screen keeps the context that provoked the question.
  *
- * /ask still exists and still works, so the window is linkable and survives
- * being opened on a phone where a 420px panel would be the whole screen anyway.
- * This is the affordance; that is the destination.
+ * There is deliberately no separate route for it. A page would be a second
+ * place to maintain, and the question is always asked in the context of a
+ * screen the manager is already on.
  *
- * Rendered only for managers, and that is convenience — the page, the server
- * action and runQuery each check the role independently. A hidden button is not
- * a permission.
+ * Rendered only for managers, and that is convenience — the server action and
+ * runQuery each check the role independently. A hidden button is not a
+ * permission.
  */
 export function AssistantFab() {
   const [open, setOpen] = useState(false);

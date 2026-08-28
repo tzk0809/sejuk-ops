@@ -31,11 +31,9 @@ const EXAMPLES = [
 ];
 
 export function AskWindow({
-  /** Focus the input on mount. Set by the floating panel, where opening it IS
-   *  the intent to type; not set on /ask, where stealing focus would fight a
-   *  keyboard user arriving from the nav. */
+  /** Focus the input on mount. The panel opening IS the intent to type. */
   autoFocus = false,
-  /** Tightens spacing for the 28rem panel. The page version has room to breathe. */
+  /** Tightens spacing for the 28rem panel. */
   compact = false,
 }: { autoFocus?: boolean; compact?: boolean } = {}) {
   const [question, setQuestion] = useState('');
