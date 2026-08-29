@@ -566,10 +566,32 @@ the one I had seen most often.
 - **A paid AI tier and a rate limit**, since the free quota caps the assistant at roughly twenty
   questions a day.
 
-**How I used AI while building:** heavily, and in two modes. For code it was a pair — I specified
-each unit, it wrote a first version, and I reviewed and corrected. The mode that mattered more was
-adversarial: writing a design down and having it attacked before any code existed. That is how the
-`status = 'job_done'` bug surfaced, before the query layer was written. Every factual claim it made
-was checked against the real database, and several were wrong — including a model recommendation
-that turned out to take 39 seconds per call, and a test expectation that was simply incorrect.
+**How I used AI while building:** heavily, and in three modes.
+
+**As a pair, for code.** I specified each unit, it wrote a first version, and I reviewed and
+corrected. The parts of this codebase I could defend least are the parts I reviewed least, which
+is a lesson in itself.
+
+**As an adversary, for design** — the mode that mattered most. Writing a design down and having it
+attacked before any code existed is how the `status = 'job_done'` bug surfaced, before the query
+layer was written.
+
+**As a test author, and then as a second pair of hands.** `TEST-PLAN.md` was drafted with AI, and
+it is more thorough than one I would have written by hand under time pressure — it pushed me to
+specify exact expected values rather than "looks right", and to cover cases I would not have
+reached for: the clock pinned inside the timezone divergence window, the mutation check on both
+suites, a Closed job that should be absent from a list it otherwise falls inside.
+
+Running it was split. I executed most of the 192 checks manually; roughly a quarter were run by
+driving the app in a browser and querying the database directly. Two bugs came out of that second
+route — the browser Back button leaving the order list entirely rather than stepping back a
+filter, and the assistant's ask box scrolling out of reach behind a long answer. Both are in the
+plan's Findings table with their cause and fix.
+
+Every factual claim it made was checked against the real database, and several were wrong — a
+model recommendation that turned out to take 39 seconds per call, a test expectation that was
+simply incorrect, and three occasions where a verification appeared to fail and the fault was in
+how I was measuring rather than in what I was measuring. Distrusting the check before the code
+turned out to be the more useful habit.
+
 `Decisions_Logs.md` records those arguments as they happened, including the ones I lost.
